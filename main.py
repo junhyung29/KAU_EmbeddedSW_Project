@@ -1,11 +1,14 @@
 # 게임 뼈대 파일
 import time
 from PIL import Image, ImageDraw
-from dungeon import MAP, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR
+from dungeon import MAP, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, START
 from hw import Hardware, WIDTH, HEIGHT
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초). 너무 짧으면 CPU를 많이 쓴다.
 FRAME_DELAY = 0.05
+
+# 방향 : (행, 열)
+DIRS = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
 
 def draw_map(draw):
     for row in range(ROWS):
@@ -18,11 +21,13 @@ def draw_map(draw):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pressed_names):
+def draw_frame(pressed_names, pos):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
     draw_map(draw)
+    x, y = pos[1] * TILE, INFO_H + pos[0] * TILE
+    draw.rectangle((x + 3, y + 3, x + TILE - 4, y + TILE - 4), fill=PLAYER_COLOR)
 
     # 정보창은 y=0~31 안에 들어와야 한다
     draw.text((4, 4), "The Last Torch", fill="white")
@@ -37,6 +42,8 @@ def draw_frame(pressed_names):
 
 def main():
     hw = Hardware()
+    pos = START
+    prev = None  # 지난 프레임에 고른 방향 (None = 중립)
     try:
         while True:
             # 눌려 있는 버튼 이름을 모은다
@@ -45,7 +52,14 @@ def main():
                 if hw.pressed(name):
                     pressed_names.append(name)
 
-            image = draw_frame(pressed_names)
+            d = next((n for n in DIRS if n in pressed_names), None)
+            if d and not prev:
+                r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
+                if MAP[r][c] != "#":
+                    pos = (r, c)
+            prev = d
+
+            image = draw_frame(pressed_names, pos)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
