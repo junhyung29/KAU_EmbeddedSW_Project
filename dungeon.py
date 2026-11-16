@@ -83,28 +83,6 @@ def make_map():
         if len(bfs(grid, start)) == floors:
             return grid, start
 
-START = (6, 7) 
-
-MAP = [
-    "###############",
-    "#.....#.......#",
-    "#.....#.......#",
-    "#.............#",
-    "#.###.....###.#",
-    "#.#.........#.#",
-    "#.#.........#.#",
-    "#.#.........#.#",
-    "#.###.....###.#",
-    "#.............#",
-    "#.....#.......#",
-    "#.....#.......#",
-    "###############",
-]
-
-assert len(MAP) == ROWS
-assert all(len(row) == COLS for row in MAP)
-assert MAP[START[0]][START[1]] == "."
-
 if __name__ == "__main__":
     grid, start = make_map()
     for line in grid:
