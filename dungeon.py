@@ -5,6 +5,9 @@ INFO_H = 32
 
 WALL_COLOR = (120, 120, 140)
 FLOOR_COLOR = (50, 35, 25)
+PLAYER_COLOR = (255, 200, 60)
+
+START = (6, 7) 
 
 MAP = [
     "###############",
@@ -24,3 +27,4 @@ MAP = [
 
 assert len(MAP) == ROWS
 assert all(len(row) == COLS for row in MAP)
+assert MAP[START[0]][START[1]] == "."
