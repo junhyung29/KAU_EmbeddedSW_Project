@@ -1,15 +1,24 @@
 # 게임 뼈대 파일
+import math
 import time
 from PIL import Image, ImageDraw
 from dungeon import make_map, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR
 from hw import Hardware, WIDTH, HEIGHT
 
-# 루프를 한 번 돌 때마다 쉬는 시간(초). 너무 짧으면 CPU를 많이 쓴다.
+# 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
+FUEL_MAX = 50
+FUEL_PER_RADIUS = 10
 
-def draw_map(draw, grid):
+def vision_radius(fuel):
+    return math.ceil(fuel / FUEL_PER_RADIUS)
+
+def draw_map(draw, grid, pos, radius):
     for row in range(ROWS):
         for col in range(COLS):
+            dr, dc = row - pos[0], col - pos[1]
+            if dr * dr + dc * dc > radius * radius + radius:
+                continue
             x = col * TILE
             y = INFO_H + row * TILE
             if grid[row][col] == "#":
@@ -18,21 +27,17 @@ def draw_map(draw, grid):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pressed_names, pos, grid):
+def draw_frame(pos, grid, fuel):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
-    draw_map(draw, grid)
+    draw_map(draw, grid, pos, vision_radius(fuel))
     x, y = pos[1] * TILE, INFO_H + pos[0] * TILE
     draw.rectangle((x + 3, y + 3, x + TILE - 4, y + TILE - 4), fill=PLAYER_COLOR)
 
     # 정보창은 y=0~31 안에 들어와야 한다
     draw.text((4, 4), "The Last Torch", fill="white")
-    if pressed_names:
-        text = " ".join(pressed_names)
-    else:
-        text = "(none)"
-    draw.text((4, 18), "pressed: " + text, fill="yellow")
+    draw.text((4, 18), f"fuel: {fuel}/{FUEL_MAX}", fill="yellow")
 
     return image
 
@@ -41,6 +46,7 @@ def main():
     hw = Hardware()
     grid, pos = make_map()
     prev = None  # 지난 프레임에 고른 방향 (None = 중립)
+    fuel = FUEL_MAX
     try:
         while True:
             # 눌려 있는 버튼 이름을 모은다
@@ -58,9 +64,11 @@ def main():
                 r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
                 if grid[r][c] != "#":
                     pos = (r, c)
+                    if fuel > 0:
+                        fuel -= 1
             prev = d
 
-            image = draw_frame(pressed_names, pos, grid)
+            image = draw_frame(pos, grid, fuel)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
