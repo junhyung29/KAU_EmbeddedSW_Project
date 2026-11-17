@@ -2,13 +2,15 @@
 import math
 import time
 from PIL import Image, ImageDraw
-from dungeon import make_map, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR
+from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR
 from hw import Hardware, WIDTH, HEIGHT
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
 FUEL_MAX = 50
 FUEL_PER_RADIUS = 10
+START_FLOOR = 1
+FINAL_FLOOR = 3
 
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
@@ -23,11 +25,13 @@ def draw_map(draw, grid, pos, radius):
             y = INFO_H + row * TILE
             if grid[row][col] == "#":
                 color = WALL_COLOR
+            elif grid[row][col] == ">":
+                color = STAIRS_COLOR
             else:
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pos, grid, fuel):
+def draw_frame(pos, grid, fuel, floor):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
@@ -37,16 +41,17 @@ def draw_frame(pos, grid, fuel):
 
     # 정보창은 y=0~31 안에 들어와야 한다
     draw.text((4, 4), "The Last Torch", fill="white")
-    draw.text((4, 18), f"fuel: {fuel}/{FUEL_MAX}", fill="yellow")
+    draw.text((4, 18), f"floor: {floor}  fuel: {fuel}/{FUEL_MAX}", fill="yellow")
 
     return image
 
 
 def main():
     hw = Hardware()
-    grid, pos = make_map()
+    grid, pos = make_floor()
     prev = None  # 지난 프레임에 고른 방향 (None = 중립)
     fuel = FUEL_MAX
+    floor = START_FLOOR
     try:
         while True:
             # 눌려 있는 버튼 이름을 모은다
@@ -66,9 +71,12 @@ def main():
                     pos = (r, c)
                     if fuel > 0:
                         fuel -= 1
+                    if grid[r][c] == ">" and floor < FINAL_FLOOR:
+                            floor += 1
+                            grid, pos = make_floor()
             prev = d
 
-            image = draw_frame(pos, grid, fuel)
+            image = draw_frame(pos, grid, fuel, floor)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)

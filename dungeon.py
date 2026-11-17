@@ -9,6 +9,7 @@ INFO_H = 32
 WALL_COLOR = (120, 120, 140)
 FLOOR_COLOR = (50, 35, 25)
 PLAYER_COLOR = (255, 200, 60)
+STAIRS_COLOR = (80, 200, 120)
 
 DIRS = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
 
@@ -82,9 +83,21 @@ def make_map():
             floors += line.count(".")
         if len(bfs(grid, start)) == floors:
             return grid, start
+        
+def make_floor():
+    grid, start = make_map()
+    dist = bfs(grid, start)
+    far = start
+    
+    for cell in dist:
+        if dist[cell] > dist[far]:
+            far = cell    
+            
+    grid[far[0]][far[1]] = ">"
+    return grid, start
 
 if __name__ == "__main__":
-    grid, start = make_map()
+    grid, start = make_floor()
     for line in grid:
         print("".join(line))
     print("start:", start)
