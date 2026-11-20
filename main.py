@@ -97,7 +97,8 @@ def main():
                     grid, pos = make_floor()
                     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
                 else:
-                    move_enemies(grid, pos, enemies, vision_radius(fuel))
+                    damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
+                    hp = max(0, hp - damage)
             prev = d
 
             image = draw_frame(pos, grid, fuel, floor, enemies, hp)
