@@ -17,10 +17,6 @@ ENEMIES_PER_FLOOR = {1: 2, 2: 4, 3: 0}
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
 
-def in_vision(pos, cell, radius):
-    dr, dc = cell[0] - pos[0], cell[1] - pos[1]
-    return dr * dr + dc * dc <= radius * radius + radius
-
 def draw_map(draw, grid, pos, radius):
     for row in range(ROWS):
         for col in range(COLS):
@@ -78,16 +74,20 @@ def main():
                 if direction in pressed_names:
                     d = direction
                     break   
-            if d and not prev:  
+                
+            turn_used = False
+            if d and not prev:
                 r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
                 if grid[r][c] != "#":
                     pos = (r, c)
-                    if fuel > 0:
-                        fuel -= 1
-                    if grid[r][c] == ">" and floor < FINAL_FLOOR:
-                        floor += 1
-                        grid, pos = make_floor()
-                        enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+                    turn_used = True
+            if turn_used:
+                if fuel > 0:
+                    fuel -= 1
+                if grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
+                    floor += 1
+                    grid, pos = make_floor()
+                    enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
             prev = d
 
             image = draw_frame(pos, grid, fuel, floor, enemies)
