@@ -4,7 +4,7 @@ import time
 from PIL import Image, ImageDraw
 from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR, in_vision
 from hw import Hardware, WIDTH, HEIGHT
-from enemy import place_enemies, ENEMY_COLOR, occupied, ENEMY_COLOR, move_enemies
+from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
@@ -12,6 +12,7 @@ FUEL_MAX = 50
 FUEL_PER_RADIUS = 10
 START_FLOOR = 1
 FINAL_FLOOR = 3
+PLAYER_HP_MAX = 3
 ENEMIES_PER_FLOOR = {1: 2, 2: 4, 3: 0}
 
 def vision_radius(fuel):
@@ -32,7 +33,7 @@ def draw_map(draw, grid, pos, radius):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pos, grid, fuel, floor, enemies):
+def draw_frame(pos, grid, fuel, floor, enemies, hp):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
@@ -48,7 +49,7 @@ def draw_frame(pos, grid, fuel, floor, enemies):
     draw.rectangle((x + 3, y + 3, x + TILE - 4, y + TILE - 4), fill=PLAYER_COLOR)
 
     # 정보창은 y=0~31 안에 들어와야 한다
-    draw.text((4, 4), "The Last Torch", fill="white")
+    draw.text((4, 4), f"The Last Torch  hp: {hp}/{PLAYER_HP_MAX}", fill="white")
     draw.text((4, 18), f"floor: {floor}  fuel: {fuel}/{FUEL_MAX}", fill="yellow")
 
     return image
@@ -59,6 +60,7 @@ def main():
     grid, pos = make_floor()
     prev = None  # 지난 프레임에 고른 방향 (None = 중립)
     fuel = FUEL_MAX
+    hp = PLAYER_HP_MAX
     floor = START_FLOOR
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
     try:
@@ -78,8 +80,14 @@ def main():
             turn_used = False
             if d and not prev:
                 r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
-                if grid[r][c] != "#" and not occupied((r, c), enemies):
-                    pos = (r, c)
+                if grid[r][c] != "#":
+                    target = enemy_at((r, c), enemies)
+                    if target:
+                        target["hp"] -= 1
+                        if target["hp"] <= 0:
+                            enemies.remove(target)
+                    else:
+                        pos = (r, c)
                     turn_used = True
             if turn_used:
                 if fuel > 0:
@@ -89,10 +97,11 @@ def main():
                     grid, pos = make_floor()
                     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
                 else:
-                    move_enemies(grid, pos, enemies, vision_radius(fuel))
+                    damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
+                    hp = max(0, hp - damage)
             prev = d
 
-            image = draw_frame(pos, grid, fuel, floor, enemies)
+            image = draw_frame(pos, grid, fuel, floor, enemies, hp)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
