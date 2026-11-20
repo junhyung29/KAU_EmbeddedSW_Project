@@ -1,5 +1,4 @@
 import random
-from dungeon import bfs, make_floor
 from dungeon import bfs, make_floor, DIRS, in_vision
 
 ENEMY_HP = 1
