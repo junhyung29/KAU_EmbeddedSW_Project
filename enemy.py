@@ -2,6 +2,7 @@ import random
 from dungeon import bfs, make_floor
 
 ENEMY_HP = 1
+ENEMY_COLOR = (220, 60, 60)
 MIN_DIST = 3
 
 def place_enemies(grid, start, count):
