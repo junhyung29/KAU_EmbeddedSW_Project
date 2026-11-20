@@ -44,6 +44,10 @@ def bfs(grid, start):
                 queue.append((nr, nc))
     return dist
 
+def in_vision(pos, cell, radius):
+    dr, dc = cell[0] - pos[0], cell[1] - pos[1]
+    return dr * dr + dc * dc <= radius * radius + radius
+
 # 맵 생성 함수
 def make_map():
     while True:
