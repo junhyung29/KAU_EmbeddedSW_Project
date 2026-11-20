@@ -4,6 +4,7 @@ from dungeon import bfs, make_floor, DIRS, in_vision
 ENEMY_HP = 1
 ENEMY_COLOR = (220, 60, 60)
 MIN_DIST = 3
+ENEMY_DAMAGE = 1
 
 def place_enemies(grid, start, count):
     dist = bfs(grid, start)
@@ -25,20 +26,25 @@ def occupied(cell, enemies):
 
 def move_enemies(grid, pos, enemies, radius):
     dist = bfs(grid, pos)
+    damage = 0
     for e in enemies:
         if not in_vision(pos, e["pos"], radius):
             continue
+        if dist[e["pos"]] == 1:
+            damage += ENEMY_DAMAGE
+            continue        
         best = e["pos"]
         for dr, dc in DIRS.values():
             nxt = (e["pos"][0] + dr, e["pos"][1] + dc)
             if nxt in dist and nxt != pos and not occupied(nxt, enemies) and dist[nxt] < dist[best]:
                 best = nxt
         e["pos"] = best
+    return damage
 
 if __name__ == "__main__":
     grid, start = make_floor()
     enemies = place_enemies(grid, start, 4)
-    for turn in range(4):
+    for turn in range(8):
         shown = []
         for line in grid:
             shown.append(list(line))
@@ -48,4 +54,5 @@ if __name__ == "__main__":
         print("turn", turn)
         for line in shown:
             print("".join(line))
-        move_enemies(grid, start, enemies, 99)
+        damage = move_enemies(grid, start, enemies, 99)
+        print("damage", damage)
