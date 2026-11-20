@@ -24,6 +24,12 @@ def occupied(cell, enemies):
             return True
     return False
 
+def enemy_at(cell, enemies):
+    for e in enemies:
+        if e["pos"] == cell:
+            return e
+    return None
+
 def move_enemies(grid, pos, enemies, radius):
     dist = bfs(grid, pos)
     damage = 0
