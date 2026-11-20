@@ -4,7 +4,7 @@ import time
 from PIL import Image, ImageDraw
 from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR, in_vision
 from hw import Hardware, WIDTH, HEIGHT
-from enemy import place_enemies, ENEMY_COLOR, occupied, move_enemies
+from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
@@ -80,8 +80,14 @@ def main():
             turn_used = False
             if d and not prev:
                 r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
-                if grid[r][c] != "#" and not occupied((r, c), enemies):
-                    pos = (r, c)
+                if grid[r][c] != "#":
+                    target = enemy_at((r, c), enemies)
+                    if target:
+                        target["hp"] -= 1
+                        if target["hp"] <= 0:
+                            enemies.remove(target)
+                    else:
+                        pos = (r, c)
                     turn_used = True
             if turn_used:
                 if fuel > 0:
