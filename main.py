@@ -89,15 +89,15 @@ def main():
                 if hw.pressed(name):
                     pressed_names.append(name)
 
-            d = None
+            action = None
             for direction in DIRS:
                 if direction in pressed_names:
-                    d = direction
+                    action = direction
                     break   
                 
             turn_used = False
-            if d and not prev:
-                r, c = pos[0] + DIRS[d][0], pos[1] + DIRS[d][1]
+            if action and not prev:
+                r, c = pos[0] + DIRS[action][0], pos[1] + DIRS[action][1]
                 if grid[r][c] != "#":
                     target = enemy_at((r, c), enemies)
                     if target:
@@ -129,7 +129,7 @@ def main():
                 else:
                     damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
                     hp = max(0, hp - damage)
-            prev = d
+            prev = action
 
             image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
             hw.show(image)
