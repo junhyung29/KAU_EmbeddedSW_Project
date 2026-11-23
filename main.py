@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR, in_vision
 from hw import Hardware, WIDTH, HEIGHT
 from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at
-from item import place_items, FUEL_COLOR, POTION_COLOR
+from item import place_items, FUEL_COLOR, POTION_COLOR, item_at
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
@@ -18,6 +18,8 @@ PLAYER_HP_MAX = 3
 ENEMIES_PER_FLOOR = {1: 2, 2: 4, 3: 0}
 FUEL_ITEMS_PER_FLOOR = 2
 MAX_POTIONS_PER_FLOOR = 1
+FUEL_PICKUP = 10
+POTION_CARRY_MAX = 2
 
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
@@ -37,7 +39,7 @@ def draw_map(draw, grid, pos, radius):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pos, grid, fuel, floor, enemies, hp, items):
+def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
@@ -63,7 +65,7 @@ def draw_frame(pos, grid, fuel, floor, enemies, hp, items):
 
     # 정보창은 y=0~31 안에 들어와야 한다
     draw.text((4, 4), f"The Last Torch  hp: {hp}/{PLAYER_HP_MAX}", fill="white")
-    draw.text((4, 18), f"floor: {floor}  fuel: {fuel}/{FUEL_MAX}", fill="yellow")
+    draw.text((4, 18), f"floor: {floor}  fuel: {fuel}/{FUEL_MAX} potion: {potions}", fill="yellow")
 
     return image
 
@@ -75,6 +77,7 @@ def main():
     fuel = FUEL_MAX
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
+    potions = 0
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
     potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
     items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)    
@@ -107,6 +110,16 @@ def main():
             if turn_used:
                 if fuel > 0:
                     fuel -= 1
+                    
+                item = item_at(pos, items)
+                if item:
+                    if item["kind"] == "fuel":
+                        fuel = min(fuel + FUEL_PICKUP, FUEL_MAX)
+                        items.remove(item)
+                    elif potions < POTION_CARRY_MAX:
+                        potions += 1
+                        items.remove(item)    
+                        
                 if grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
                     floor += 1
                     grid, pos = make_floor()
@@ -118,7 +131,7 @@ def main():
                     hp = max(0, hp - damage)
             prev = d
 
-            image = draw_frame(pos, grid, fuel, floor, enemies, hp, items)
+            image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
