@@ -94,9 +94,16 @@ def main():
                 if direction in pressed_names:
                     action = direction
                     break   
+            if not action and "A" in pressed_names:
+                action = "A"
                 
             turn_used = False
-            if action and not prev:
+            if action == "A" and not prev:
+                if potions > 0 and hp < PLAYER_HP_MAX:
+                    potions -= 1
+                    hp += 1
+                    turn_used = True
+            elif action and not prev:
                 r, c = pos[0] + DIRS[action][0], pos[1] + DIRS[action][1]
                 if grid[r][c] != "#":
                     target = enemy_at((r, c), enemies)
