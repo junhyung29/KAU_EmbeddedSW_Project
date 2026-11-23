@@ -1,10 +1,12 @@
 import random
-from dungeon import bfs, make_floor, DIRS, in_vision
+from dungeon import bfs, make_floor, DIRS, in_vision, ROWS, COLS
 
 ENEMY_HP = 1
 ENEMY_COLOR = (220, 60, 60)
 MIN_DIST = 3
 ENEMY_DAMAGE = 1
+BOSS_HP = 3
+BOSS_COLOR = (170, 60, 220)
 
 def place_enemies(grid, start, count):
     dist = bfs(grid, start)
@@ -15,7 +17,7 @@ def place_enemies(grid, start, count):
 
     enemies = []
     for cell in random.sample(candidates, count):
-        enemies.append({"pos": cell, "hp": ENEMY_HP})
+        enemies.append({"pos": cell, "hp": ENEMY_HP, "kind": "normal"})
     return enemies
 
 def occupied(cell, enemies):
@@ -29,6 +31,19 @@ def enemy_at(cell, enemies):
         if e["pos"] == cell:
             return e
     return None
+
+def place_boss(grid):
+    for row in range(ROWS):
+        for col in range(COLS):
+            if grid[row][col] == ">":
+                stairs = (row, col)
+
+    candidates = []
+    for dr, dc in DIRS.values():
+        cell = (stairs[0] + dr, stairs[1] + dc)
+        if grid[cell[0]][cell[1]] == ".":
+            candidates.append(cell)
+    return {"pos": random.choice(candidates), "hp": BOSS_HP, "kind": "boss"}
 
 def move_enemies(grid, pos, enemies, radius):
     dist = bfs(grid, pos)
