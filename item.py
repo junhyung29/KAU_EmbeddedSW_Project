@@ -2,7 +2,9 @@ import random
 from dungeon import make_floor, ROWS, COLS
 from enemy import place_enemies, occupied
 
+# 주황
 FUEL_COLOR = (255, 140, 0)
+# 파랑
 POTION_COLOR = (80, 160, 255)
 
 # 아이템 배치

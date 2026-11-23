@@ -1,10 +1,12 @@
 # 게임 뼈대 파일
 import math
 import time
+import random
 from PIL import Image, ImageDraw
 from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR, in_vision
 from hw import Hardware, WIDTH, HEIGHT
 from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at
+from item import place_items, FUEL_COLOR, POTION_COLOR
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
 FRAME_DELAY = 0.05
@@ -14,6 +16,8 @@ START_FLOOR = 1
 FINAL_FLOOR = 3
 PLAYER_HP_MAX = 3
 ENEMIES_PER_FLOOR = {1: 2, 2: 4, 3: 0}
+FUEL_ITEMS_PER_FLOOR = 2
+MAX_POTIONS_PER_FLOOR = 1
 
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
@@ -33,12 +37,21 @@ def draw_map(draw, grid, pos, radius):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pos, grid, fuel, floor, enemies, hp):
+def draw_frame(pos, grid, fuel, floor, enemies, hp, items):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
     radius = vision_radius(fuel)
     draw_map(draw, grid, pos, radius)
+ 
+    for item in items:
+        if in_vision(pos, item["pos"], radius):
+            ix, iy = item["pos"][1] * TILE, INFO_H + item["pos"][0] * TILE
+            if item["kind"] == "fuel":
+                color = FUEL_COLOR
+            else:
+                color = POTION_COLOR
+            draw.rectangle((ix + 5, iy + 5, ix + TILE - 6, iy + TILE - 6), fill=color)    
     
     for e in enemies:
         if in_vision(pos, e["pos"], radius):
@@ -63,6 +76,8 @@ def main():
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+    potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
+    items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)    
     try:
         while True:
             # 눌려 있는 버튼 이름을 모은다
@@ -96,12 +111,14 @@ def main():
                     floor += 1
                     grid, pos = make_floor()
                     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+                    potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
+                    items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
                 else:
                     damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
                     hp = max(0, hp - damage)
             prev = d
 
-            image = draw_frame(pos, grid, fuel, floor, enemies, hp)
+            image = draw_frame(pos, grid, fuel, floor, enemies, hp, items)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
