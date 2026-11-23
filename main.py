@@ -5,7 +5,7 @@ import random
 from PIL import Image, ImageDraw
 from dungeon import make_floor, DIRS, TILE, COLS, ROWS, INFO_H, WALL_COLOR, FLOOR_COLOR, PLAYER_COLOR, STAIRS_COLOR, in_vision
 from hw import Hardware, WIDTH, HEIGHT
-from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at
+from enemy import place_enemies, ENEMY_COLOR, move_enemies, enemy_at, place_boss, BOSS_COLOR
 from item import place_items, FUEL_COLOR, POTION_COLOR, item_at
 
 # 루프를 한 번 돌 때마다 쉬는 시간(초)
@@ -58,7 +58,10 @@ def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
     for e in enemies:
         if in_vision(pos, e["pos"], radius):
             ex, ey = e["pos"][1] * TILE, INFO_H + e["pos"][0] * TILE
-            draw.rectangle((ex + 3, ey + 3, ex + TILE - 4, ey + TILE - 4), fill=ENEMY_COLOR)
+            if e["kind"] == "boss":
+                draw.rectangle((ex + 1, ey + 1, ex + TILE - 2, ey + TILE - 2), fill=BOSS_COLOR)
+            else:
+                draw.rectangle((ex + 3, ey + 3, ex + TILE - 4, ey + TILE - 4), fill=ENEMY_COLOR)
             
     x, y = pos[1] * TILE, INFO_H + pos[0] * TILE
     draw.rectangle((x + 3, y + 3, x + TILE - 4, y + TILE - 4), fill=PLAYER_COLOR)
@@ -79,6 +82,8 @@ def main():
     floor = START_FLOOR
     potions = 0
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+    if floor == FINAL_FLOOR:
+        enemies.append(place_boss(grid))
     potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
     items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)    
     try:
@@ -131,6 +136,8 @@ def main():
                     floor += 1
                     grid, pos = make_floor()
                     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+                    if floor == FINAL_FLOOR:
+                        enemies.append(place_boss(grid))
                     potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
                     items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
                 else:
