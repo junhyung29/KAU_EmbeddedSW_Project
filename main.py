@@ -72,15 +72,25 @@ def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
 
     return image
 
+# 검은 화면에 글자만 쓰기 (타이틀, 일시정지 등)
+def draw_text_screen(lines):
+    image = Image.new("RGB", (WIDTH, HEIGHT), "black")
+    draw = ImageDraw.Draw(image)
+    y = 90
+    for line in lines:
+        draw.text((40, y), line, fill="white")
+        y += 20
+    return image
 
 def main():
     hw = Hardware()
     grid, pos = make_floor()
-    prev = None  # 지난 프레임에 고른 방향 (None = 중립)
+    prev = None  # 지난 프레임에 고른 행동 (방향, A, B / None = 아무것도 안 누름)
     fuel = FUEL_MAX
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
     potions = 0
+    state = "title"
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
     if floor == FINAL_FLOOR:
         enemies.append(place_boss(grid))
@@ -101,51 +111,69 @@ def main():
                     break   
             if not action and "A" in pressed_names:
                 action = "A"
-                
-            turn_used = False
-            if action == "A" and not prev:
-                if potions > 0 and hp < PLAYER_HP_MAX:
-                    potions -= 1
-                    hp += 1
-                    turn_used = True
-            elif action and not prev:
-                r, c = pos[0] + DIRS[action][0], pos[1] + DIRS[action][1]
-                if grid[r][c] != "#":
-                    target = enemy_at((r, c), enemies)
-                    if target:
-                        target["hp"] -= 1
-                        if target["hp"] <= 0:
-                            enemies.remove(target)
-                    else:
-                        pos = (r, c)
-                    turn_used = True
-            if turn_used:
-                if fuel > 0:
-                    fuel -= 1
-                    
-                item = item_at(pos, items)
-                if item:
-                    if item["kind"] == "fuel":
-                        fuel = min(fuel + FUEL_PICKUP, FUEL_MAX)
-                        items.remove(item)
-                    elif potions < POTION_CARRY_MAX:
-                        potions += 1
-                        items.remove(item)    
+            if not action and "B" in pressed_names:
+                action = "B"
+            
+            
+            if state == "title":
+                if action == "A" and not prev:
+                    state = "play"
+            elif state == "pause":
+                if action == "B" and not prev:
+                    state = "play"
+            elif state == "play":    
+                turn_used = False
+                if action == "B" and not prev:
+                    state = "pause"
+                elif action == "A" and not prev:
+                    if potions > 0 and hp < PLAYER_HP_MAX:
+                        potions -= 1
+                        hp += 1
+                        turn_used = True
+                elif action and not prev:
+                    r, c = pos[0] + DIRS[action][0], pos[1] + DIRS[action][1]
+                    if grid[r][c] != "#":
+                        target = enemy_at((r, c), enemies)
+                        if target:
+                            target["hp"] -= 1
+                            if target["hp"] <= 0:
+                                enemies.remove(target)
+                        else:
+                            pos = (r, c)
+                        turn_used = True
+                if turn_used:
+                    if fuel > 0:
+                        fuel -= 1
                         
-                if grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
-                    floor += 1
-                    grid, pos = make_floor()
-                    enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
-                    if floor == FINAL_FLOOR:
-                        enemies.append(place_boss(grid))
-                    potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
-                    items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
-                else:
-                    damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
-                    hp = max(0, hp - damage)
+                    item = item_at(pos, items)
+                    if item:
+                        if item["kind"] == "fuel":
+                            fuel = min(fuel + FUEL_PICKUP, FUEL_MAX)
+                            items.remove(item)
+                        elif potions < POTION_CARRY_MAX:
+                            potions += 1
+                            items.remove(item)    
+                            
+                    if grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
+                        floor += 1
+                        grid, pos = make_floor()
+                        enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+                        if floor == FINAL_FLOOR:
+                            enemies.append(place_boss(grid))
+                        potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
+                        items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
+                    else:
+                        damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
+                        hp = max(0, hp - damage)
             prev = action
 
-            image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
+            if state == "title":
+                image = draw_text_screen(["The Last Torch", "A: start"])
+            elif state == "pause":
+                image = draw_text_screen(["PAUSED", "B: resume"])    
+            else:
+                image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
+                
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
