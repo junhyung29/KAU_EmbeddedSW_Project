@@ -158,9 +158,16 @@ def main():
                             potions += 1
                             items.remove(item)    
                             
-                    if fuel == 0:
+                    boss_alive = False
+                    for e in enemies:
+                        if e["kind"] == "boss":
+                            boss_alive = True
+                    on_stairs = grid[pos[0]][pos[1]] == ">"
+                    if on_stairs and floor == FINAL_FLOOR and not boss_alive:
+                        state = "clear"
+                    elif fuel == 0:
                         state = "over"
-                    elif grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
+                    elif on_stairs and floor < FINAL_FLOOR:
                         floor += 1
                         grid, pos, enemies, items = new_floor(floor)
                     else:
@@ -169,7 +176,7 @@ def main():
                         if hp == 0:
                             state = "over"  
                             
-            elif state == "over":
+            elif state == "over" or state == "clear":
                 if action == "A" and not prev:
                     fuel = FUEL_MAX
                     hp = PLAYER_HP_MAX
@@ -184,7 +191,9 @@ def main():
             elif state == "pause":
                 image = draw_text_screen(["PAUSED", "B: resume"])
             elif state == "over":
-                image = draw_text_screen(["GAME OVER", "A: title"])                
+                image = draw_text_screen(["GAME OVER", "A: title"]) 
+            elif state == "clear":                                  
+                image = draw_text_screen(["ESCAPED!", "A: title"])                   
             else:
                 image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
                 
