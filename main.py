@@ -85,7 +85,7 @@ def draw_text_screen(lines):
 def main():
     hw = Hardware()
     grid, pos = make_floor()
-    prev = None  # 지난 프레임에 고른 방향 (None = 중립)
+    prev = None  # 지난 프레임에 고른 행동 (방향, A, B / None = 아무것도 안 누름)
     fuel = FUEL_MAX
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
@@ -111,13 +111,21 @@ def main():
                     break   
             if not action and "A" in pressed_names:
                 action = "A"
+            if not action and "B" in pressed_names:
+                action = "B"
+            
             
             if state == "title":
                 if action == "A" and not prev:
                     state = "play"
+            elif state == "pause":
+                if action == "B" and not prev:
+                    state = "play"
             elif state == "play":    
                 turn_used = False
-                if action == "A" and not prev:
+                if action == "B" and not prev:
+                    state = "pause"
+                elif action == "A" and not prev:
                     if potions > 0 and hp < PLAYER_HP_MAX:
                         potions -= 1
                         hp += 1
@@ -161,10 +169,11 @@ def main():
 
             if state == "title":
                 image = draw_text_screen(["The Last Torch", "A: start"])
+            elif state == "pause":
+                image = draw_text_screen(["PAUSED", "B: resume"])    
             else:
                 image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
                 
-            hw.show(image)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
