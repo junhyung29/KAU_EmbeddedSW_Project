@@ -24,6 +24,15 @@ POTION_CARRY_MAX = 2
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
 
+def new_floor(floor):
+    grid, pos = make_floor()
+    enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
+    if floor == FINAL_FLOOR:
+        enemies.append(place_boss(grid))
+    potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
+    items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
+    return grid, pos, enemies, items
+
 def draw_map(draw, grid, pos, radius):
     for row in range(ROWS):
         for col in range(COLS):
@@ -84,18 +93,13 @@ def draw_text_screen(lines):
 
 def main():
     hw = Hardware()
-    grid, pos = make_floor()
     prev = None  # 지난 프레임에 고른 행동 (방향, A, B / None = 아무것도 안 누름)
     fuel = FUEL_MAX
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
     potions = 0
     state = "title"
-    enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
-    if floor == FINAL_FLOOR:
-        enemies.append(place_boss(grid))
-    potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
-    items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)    
+    grid, pos, enemies, items = new_floor(floor)    
     try:
         while True:
             # 눌려 있는 버튼 이름을 모은다
@@ -154,23 +158,33 @@ def main():
                             potions += 1
                             items.remove(item)    
                             
-                    if grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
+                    if fuel == 0:
+                        state = "over"
+                    elif grid[pos[0]][pos[1]] == ">" and floor < FINAL_FLOOR:
                         floor += 1
-                        grid, pos = make_floor()
-                        enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
-                        if floor == FINAL_FLOOR:
-                            enemies.append(place_boss(grid))
-                        potion_count = random.randint(0, MAX_POTIONS_PER_FLOOR)
-                        items = place_items(grid, pos, enemies, FUEL_ITEMS_PER_FLOOR, potion_count)
+                        grid, pos, enemies, items = new_floor(floor)
                     else:
                         damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
                         hp = max(0, hp - damage)
+                        if hp == 0:
+                            state = "over"  
+                            
+            elif state == "over":
+                if action == "A" and not prev:
+                    fuel = FUEL_MAX
+                    hp = PLAYER_HP_MAX
+                    potions = 0
+                    floor = START_FLOOR
+                    grid, pos, enemies, items = new_floor(floor)
+                    state = "title"            
             prev = action
 
             if state == "title":
                 image = draw_text_screen(["The Last Torch", "A: start"])
             elif state == "pause":
-                image = draw_text_screen(["PAUSED", "B: resume"])    
+                image = draw_text_screen(["PAUSED", "B: resume"])
+            elif state == "over":
+                image = draw_text_screen(["GAME OVER", "A: title"])                
             else:
                 image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
                 
