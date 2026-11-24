@@ -72,6 +72,15 @@ def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
 
     return image
 
+# 검은 화면에 글자만 쓰기 (타이틀, 일시정지 등)
+def draw_text_screen(lines):
+    image = Image.new("RGB", (WIDTH, HEIGHT), "black")
+    draw = ImageDraw.Draw(image)
+    y = 90
+    for line in lines:
+        draw.text((40, y), line, fill="white")
+        y += 20
+    return image
 
 def main():
     hw = Hardware()
@@ -81,7 +90,7 @@ def main():
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
     potions = 0
-    state = "play"
+    state = "title"
     enemies = place_enemies(grid, pos, ENEMIES_PER_FLOOR[floor])
     if floor == FINAL_FLOOR:
         enemies.append(place_boss(grid))
@@ -103,7 +112,10 @@ def main():
             if not action and "A" in pressed_names:
                 action = "A"
             
-            if state == "play":    
+            if state == "title":
+                if action == "A" and not prev:
+                    state = "play"
+            elif state == "play":    
                 turn_used = False
                 if action == "A" and not prev:
                     if potions > 0 and hp < PLAYER_HP_MAX:
@@ -147,7 +159,12 @@ def main():
                         hp = max(0, hp - damage)
             prev = action
 
-            image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
+            if state == "title":
+                image = draw_text_screen(["The Last Torch", "A: start"])
+            else:
+                image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
+                
+            hw.show(image)
             hw.show(image)
 
             time.sleep(FRAME_DELAY)
