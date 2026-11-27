@@ -120,6 +120,7 @@ def main():
     floor = START_FLOOR
     potions = 0
     kills = 0
+    best = load_highscore()
     state = "title"
     grid, pos, enemies, items = new_floor(floor)    
     try:
@@ -201,6 +202,10 @@ def main():
                             
                     if state == "over" or state == "clear":
                         score = calc_score(floor, kills, fuel, state == "clear")
+                        new_record = score > best
+                        if new_record:
+                            best = score
+                            save_highscore(best)
                             
             elif state == "over" or state == "clear":
                 if action == "A" and not prev:
@@ -214,13 +219,17 @@ def main():
             prev = action
 
             if state == "title":
-                image = draw_text_screen(["The Last Torch", "A: start"])
+                image = draw_text_screen(["The Last Torch", f"best: {best}", "A: start"])
             elif state == "pause":
                 image = draw_text_screen(["PAUSED", "B: resume"])
-            elif state == "over":
-                image = draw_text_screen(["GAME OVER", f"score: {score}", "A: title"])
-            elif state == "clear":
-                image = draw_text_screen(["ESCAPED!", f"score: {score}", "A: title"])              
+            elif state == "over" or state == "clear":
+                title = "ESCAPED!"
+                if state == "over":
+                    title = "GAME OVER"
+                record = f"best: {best}"
+                if new_record:
+                    record = "NEW RECORD!"
+                image = draw_text_screen([title, f"score: {score}", record, "A: title"])              
             else:
                 image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
                 
