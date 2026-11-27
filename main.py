@@ -20,9 +20,30 @@ FUEL_ITEMS_PER_FLOOR = 2
 MAX_POTIONS_PER_FLOOR = 1
 FUEL_PICKUP = 10
 POTION_CARRY_MAX = 2
+FLOOR_SCORE = 100
+KILL_SCORE = 10
+ESCAPE_SCORE = 300
+HIGHSCORE_FILE = "highscore.txt"
 
 def vision_radius(fuel):
     return math.ceil(fuel / FUEL_PER_RADIUS)
+
+def calc_score(floor, kills, fuel, escaped):
+    score = floor * FLOOR_SCORE + kills * KILL_SCORE
+    if escaped:
+        score += ESCAPE_SCORE + fuel
+    return score
+
+def load_highscore():
+    try:
+        with open(HIGHSCORE_FILE) as f:
+            return int(f.read())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+def save_highscore(score):
+    with open(HIGHSCORE_FILE, "w") as f:
+        f.write(str(score))
 
 def new_floor(floor):
     grid, pos = make_floor()
@@ -98,6 +119,7 @@ def main():
     hp = PLAYER_HP_MAX
     floor = START_FLOOR
     potions = 0
+    kills = 0
     state = "title"
     grid, pos, enemies, items = new_floor(floor)    
     try:
@@ -142,6 +164,7 @@ def main():
                             target["hp"] -= 1
                             if target["hp"] <= 0:
                                 enemies.remove(target)
+                                kills += 1
                         else:
                             pos = (r, c)
                         turn_used = True
@@ -176,11 +199,15 @@ def main():
                         if hp == 0:
                             state = "over"  
                             
+                    if state == "over" or state == "clear":
+                        score = calc_score(floor, kills, fuel, state == "clear")
+                            
             elif state == "over" or state == "clear":
                 if action == "A" and not prev:
                     fuel = FUEL_MAX
                     hp = PLAYER_HP_MAX
                     potions = 0
+                    kills = 0
                     floor = START_FLOOR
                     grid, pos, enemies, items = new_floor(floor)
                     state = "title"            
@@ -191,9 +218,9 @@ def main():
             elif state == "pause":
                 image = draw_text_screen(["PAUSED", "B: resume"])
             elif state == "over":
-                image = draw_text_screen(["GAME OVER", "A: title"]) 
-            elif state == "clear":                                  
-                image = draw_text_screen(["ESCAPED!", "A: title"])                   
+                image = draw_text_screen(["GAME OVER", f"score: {score}", "A: title"])
+            elif state == "clear":
+                image = draw_text_screen(["ESCAPED!", f"score: {score}", "A: title"])              
             else:
                 image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
                 
