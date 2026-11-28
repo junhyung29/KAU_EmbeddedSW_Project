@@ -226,7 +226,7 @@ def main():
             prev = action
 
             if state == "title":
-                image = draw_text_screen(["The Last Torch", f"best: {best}", "A: start"])
+                image = draw_text_screen(["The Last Torch", f"best: {best}", "A: start", "", "A: potion/wait  B: pause"])
             elif state == "pause":
                 image = draw_text_screen(["PAUSED", "B: resume"])
             elif state == "over" or state == "clear":
