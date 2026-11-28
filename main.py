@@ -156,7 +156,7 @@ def main():
                     if potions > 0 and hp < PLAYER_HP_MAX:
                         potions -= 1
                         hp += 1
-                        turn_used = True
+                    turn_used = True
                 elif action and not prev:
                     r, c = pos[0] + DIRS[action][0], pos[1] + DIRS[action][1]
                     if grid[r][c] != "#":
