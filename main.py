@@ -69,7 +69,7 @@ def draw_map(draw, grid, pos, radius):
                 color = FLOOR_COLOR
             draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), fill=color)
             
-def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
+def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions, hurt):
     image = Image.new("RGB", (WIDTH, HEIGHT), "black")
     draw = ImageDraw.Draw(image)
 
@@ -95,6 +95,9 @@ def draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions):
             
     x, y = pos[1] * TILE, INFO_H + pos[0] * TILE
     draw.rectangle((x + 3, y + 3, x + TILE - 4, y + TILE - 4), fill=PLAYER_COLOR)
+    
+    if hurt and int(time.time() * 4) % 2 == 0:
+        draw.rectangle((x, y, x + TILE - 1, y + TILE - 1), outline="red", width=2)
 
     # 정보창은 y=0~31 안에 들어와야 한다
     draw.text((4, 4), f"The Last Torch  hp: {hp}/{PLAYER_HP_MAX}", fill="white")
@@ -120,6 +123,7 @@ def main():
     floor = START_FLOOR
     potions = 0
     kills = 0
+    hurt = False
     best = load_highscore()
     state = "title"
     grid, pos, enemies, items = new_floor(floor)    
@@ -170,6 +174,7 @@ def main():
                             pos = (r, c)
                         turn_used = True
                 if turn_used:
+                    hurt = False
                     if fuel > 0:
                         fuel -= 1
                         
@@ -197,6 +202,7 @@ def main():
                     else:
                         damage = move_enemies(grid, pos, enemies, vision_radius(fuel))
                         hp = max(0, hp - damage)
+                        hurt = damage > 0
                         if hp == 0:
                             state = "over"  
                             
@@ -213,6 +219,7 @@ def main():
                     hp = PLAYER_HP_MAX
                     potions = 0
                     kills = 0
+                    hurt = False
                     floor = START_FLOOR
                     grid, pos, enemies, items = new_floor(floor)
                     state = "title"            
@@ -231,7 +238,7 @@ def main():
                     record = "NEW RECORD!"
                 image = draw_text_screen([title, f"score: {score}", record, "A: title"])              
             else:
-                image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions)
+                image = draw_frame(pos, grid, fuel, floor, enemies, hp, items, potions, hurt)
                 
             hw.show(image)
 
